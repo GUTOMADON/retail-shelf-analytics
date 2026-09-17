@@ -9,6 +9,11 @@ Two render modes are supported:
 - Debug view: adds per-box class and confidence labels and a full-width
   status banner per shelf. Meant for development and troubleshooting, not
   for a first-look demo image, since labels can overlap on dense shelves.
+
+When a ComplianceSummary is passed in, a compact executive summary card
+(occupancy, facing count, gap count, status breakdown) is drawn in the
+bottom-right corner in both views, so a single exported image is readable
+on its own without the surrounding dashboard.
 """
 
 from __future__ import annotations
@@ -18,7 +23,7 @@ import io
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from app.schemas import RegionStatus, ShelfRegion, StockGap
+from app.schemas import ComplianceSummary, RegionStatus, ShelfRegion, StockGap
 
 _STATUS_COLORS: dict[RegionStatus, tuple[int, int, int]] = {
     RegionStatus.OK: (34, 197, 94),
@@ -65,7 +70,65 @@ def _draw_gap_marker(draw: ImageDraw.ImageDraw, region: ShelfRegion, gap: StockG
     draw.text((gap.x_start + 3, top + 2), label, fill=_GAP_COLOR, font=font)
 
 
-def draw_annotations(image_rgb: np.ndarray, regions: list[ShelfRegion], debug: bool = False) -> bytes:
+def _draw_summary_panel(
+    image: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    compliance: ComplianceSummary,
+    title_font: ImageFont.ImageFont,
+    body_font: ImageFont.ImageFont,
+) -> None:
+    """Compact executive summary card in the bottom-right corner: occupancy,
+    facings, gaps, and a status breakdown. Meant to make a single exported
+    Clean view image readable on its own, without the surrounding dashboard.
+    """
+    lines = [
+        f"{compliance.overall_occupancy_ratio * 100:.0f}% occupancy",
+        f"{compliance.total_facings} facings across {compliance.total_regions} shelves",
+        f"{compliance.total_estimated_missing_facings} est. missing facings",
+    ]
+    status_counts = [
+        (_STATUS_COLORS[RegionStatus.OK], f"{compliance.ok_regions} OK"),
+        (_STATUS_COLORS[RegionStatus.UNDERSTOCKED], f"{compliance.understocked_regions} under-stocked"),
+        (_STATUS_COLORS[RegionStatus.EMPTY], f"{compliance.empty_regions} empty"),
+        (_STATUS_COLORS[RegionStatus.UNKNOWN], f"{compliance.unknown_regions} unknown"),
+    ]
+    status_counts = [(color, text) for color, text in status_counts if not text.startswith("0 ")]
+
+    padding = 14
+    line_height = body_font.size + 6
+    title = "SHELF ANALYSIS"
+    title_height = title_font.size + 10
+    panel_height = padding * 2 + title_height + len(lines) * line_height + len(status_counts) * line_height
+    text_widths = [draw.textlength(t, font=body_font) for t in lines + [s[1] for s in status_counts]]
+    text_widths.append(draw.textlength(title, font=title_font))
+    panel_width = max(text_widths) + padding * 2 + 16
+
+    x2, y2 = image.width - 16, image.height - 16
+    x1, y1 = x2 - panel_width, y2 - panel_height
+
+    draw.rounded_rectangle([x1, y1, x2, y2], radius=10, fill=(15, 23, 42, 215))
+    cursor_y = y1 + padding
+    draw.text((x1 + padding, cursor_y), title, fill=(148, 197, 255, 255), font=title_font)
+    cursor_y += title_height
+
+    for line in lines:
+        draw.text((x1 + padding, cursor_y), line, fill=(255, 255, 255, 255), font=body_font)
+        cursor_y += line_height
+
+    for color, text in status_counts:
+        dot_r = 4
+        dot_cy = cursor_y + body_font.size / 2
+        draw.ellipse([x1 + padding, dot_cy - dot_r, x1 + padding + dot_r * 2, dot_cy + dot_r], fill=(*color, 255))
+        draw.text((x1 + padding + dot_r * 2 + 6, cursor_y), text, fill=(226, 232, 240, 255), font=body_font)
+        cursor_y += line_height
+
+
+def draw_annotations(
+    image_rgb: np.ndarray,
+    regions: list[ShelfRegion],
+    debug: bool = False,
+    compliance: ComplianceSummary | None = None,
+) -> bytes:
     """Draw detections, shelf indicators, and gap markers; return PNG bytes."""
     image = Image.fromarray(image_rgb)
     draw = ImageDraw.Draw(image, "RGBA")
@@ -95,6 +158,11 @@ def draw_annotations(image_rgb: np.ndarray, regions: list[ShelfRegion], debug: b
 
         for gap in region.gaps:
             _draw_gap_marker(draw, region, gap, box_font, debug)
+
+    if compliance is not None:
+        summary_title_font = _load_font(max(13, image.width // 90))
+        summary_body_font = _load_font(max(12, image.width // 100))
+        _draw_summary_panel(image, draw, compliance, summary_title_font, summary_body_font)
 
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")

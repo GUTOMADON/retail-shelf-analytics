@@ -10,7 +10,7 @@
 Detects product facings on a shelf photo, groups them into physical shelf rows, and reports occupancy and stock gaps as a JSON report and an annotated image.
 
 ![Clean annotated result](backend/sample_data/output/shelf_soda_bottles_clean.jpg)
-*Actual output of this pipeline (Clean view). Two shelf rows resolved by density-based clustering (22 facings, both real gaps in the photo flagged with an estimated missing-facing count), plus a third region at the bottom (the crate of loose bottles on the floor) correctly reported as `unknown` rather than a confident status.*
+*Actual output of this pipeline (Clean view), with the on-image executive summary panel in the corner: 87% occupancy, 23 facings across 3 detected regions, 3 estimated missing facings. The third region is the crate of loose bottles on the floor, correctly reported as `unknown` rather than a confident status, since a single low-confidence detection is not enough evidence to trust.*
 
 ## Table of contents
 
@@ -76,9 +76,9 @@ The root cause and the fix are both documented with exact file and line referenc
 1. **Upload**: the React app posts the image as `multipart/form-data` to `POST /api/analyze`, with confidence, IoU, an optional expected-shelf-count hint, and a `debug` flag.
 2. **Decode**: FastAPI reads the upload and decodes it with OpenCV.
 3. **Detection** (`app/detection.py`): a YOLOv8 model, loaded once as a process-wide singleton, returns bounding boxes, confidence scores, and class labels.
-4. **Class filter and cross-class NMS** (`app/detection.py`): output is restricted to a curated allowlist of plausible retail-product COCO classes, and a containment-based pass drops boxes that are mostly swallowed by a larger box of a different class (see [How detection cleanup works](#how-detection-cleanup-works)).
+4. **Class filter and cross-class deduplication** (`app/detection.py`): output is restricted to a curated allowlist of plausible retail-product COCO classes, then a class-agnostic IoU pass and a containment pass remove duplicate and false-positive boxes that Ultralytics' own per-class NMS cannot catch (see [How detection cleanup works](#how-detection-cleanup-works)).
 5. **Row clustering** (`app/shelf_analysis.py`): detections are grouped into shelf rows with DBSCAN over a scale-normalized vertical distance, then each row gets an occupancy ratio, a list of stock gaps, an average confidence, and a status.
-6. **Annotation** (`app/annotation.py`): Pillow renders the result in Clean view (a compact left-margin status tag, plain boxes, slim gap markers) or Debug view (adds per-box labels and full shelf banners).
+6. **Annotation** (`app/annotation.py`): Pillow renders the result in Clean view (a compact left-margin status tag, plain boxes, slim gap markers, and an executive summary card in the corner) or Debug view (adds per-box labels and full shelf banners).
 7. **Response**: a single `AnalysisReport` (Pydantic model) carries the annotated image, the per-shelf breakdown, a compliance summary, and a processing time.
 8. **Render**: the frontend renders the annotated image, a compliance dashboard, and a per-shelf table, typed against the same response shape.
 
@@ -92,12 +92,13 @@ Regions built from very few detections (by default, fewer than 2) are reported a
 
 ## How detection cleanup works
 
-The stock COCO-pretrained checkpoint returns all 80 COCO classes, most of which cannot be a shelf product. Two cleanup steps run after detection, in `app/detection.py`:
+The stock COCO-pretrained checkpoint returns all 80 COCO classes, most of which cannot be a shelf product, and only ever runs non-max suppression within a single class. Three cleanup steps run after detection, in `app/detection.py`, in order:
 
 1. **Class allowlist**: only classes that can plausibly be a packaged or loose retail product are kept (`bottle`, `cup`, `bowl`, various foods, `book`, `vase`, and similar). Structural and unrelated classes such as `refrigerator`, `person`, or `chair` are dropped.
-2. **Cross-class containment suppression**: Ultralytics applies non-max suppression per class, so a large box of one class is never compared against an overlapping box of another class. A box that contains two or more other, mutually non-overlapping boxes is treated as a coarse false positive spanning several real objects and is dropped, keeping its children. A box that contains exactly one other box is resolved by keeping whichever of the two has higher confidence.
+2. **Cross-class IoU suppression**: a standard greedy NMS pass, run again across all remaining classes together. This catches the case Ultralytics' own per-class NMS cannot: two boxes of different classes (for example `bottle` and `vase`) both describing the same physical object. The higher-confidence box wins.
+3. **Containment suppression**: a box that contains two or more other, mutually non-overlapping boxes is treated as a coarse false positive spanning several real objects and is dropped, keeping its children. This is the "refrigerator box swallowing several bottle boxes" case, which a plain IoU pass does not catch, since the umbrella box can have low IoU with each individual child while still enclosing all of them.
 
-Both functions are pure, model-free, and covered directly by unit tests in `backend/tests/test_detection_postprocessing.py`.
+All three functions are pure, model-free, and covered directly by unit tests in `backend/tests/test_detection_postprocessing.py`, including a direct regression test for the swallowed-boxes case.
 
 ## Tech stack
 
@@ -278,7 +279,8 @@ Backend settings are read from environment variables (or `backend/.env`), prefix
 | `SHELF_DEVICE` | `cpu` | Inference device (`cpu`, `cuda`, `mps`) |
 | `SHELF_DEFAULT_CONFIDENCE` | 0.35 | Default confidence threshold if not passed per request |
 | `SHELF_DEFAULT_IOU` | 0.45 | Default IoU threshold if not passed per request |
-| `SHELF_CONTAINMENT_SUPPRESSION_THRESHOLD` | 0.85 | Containment fraction above which a box is treated as a duplicate or a false-positive umbrella |
+| `SHELF_CROSS_CLASS_IOU_THRESHOLD` | 0.5 | Class-agnostic greedy NMS threshold; two boxes of different classes at or above this IoU are treated as the same object |
+| `SHELF_CONTAINMENT_SUPPRESSION_THRESHOLD` | 0.85 | Containment fraction above which a box is treated as a false-positive umbrella spanning several real objects |
 | `SHELF_DBSCAN_EPS_FACTOR` | 0.25 | Row clustering threshold, in units of average box height; tuned against both bundled sample photos, see `docs/AUDIT.md` |
 | `SHELF_MIN_DETECTIONS_FOR_CONFIDENCE` | 2 | Regions with fewer detections than this are reported as `unknown` |
 | `SHELF_GAP_WIDTH_FACTOR` | 1.35 | Horizontal gap multiplier that flags a stock gap |
@@ -325,8 +327,8 @@ This project went through an explicit research and audit pass before the pipelin
 
 Documented as not implemented, with the specific reason, rather than attempted with fabricated results:
 
-- Fine-tune a YOLOv8 or YOLO11 checkpoint on SKU-110K or a comparable labeled retail dataset, and report real measured precision, recall, and mAP against a held-out split.
-- SKU or brand recognition via embeddings (for example MobileNetV3 or DINOv2) and a similarity index, following the approach in `Alijanloo/Retail-Shelf-Monitoring` and `Adnanwadee/retail-shelf-dense-product-detection` (see `docs/PRIOR_ART.md`).
+- Fine-tune a YOLOv8 or YOLO11 checkpoint on SKU-110K or a comparable labeled retail dataset, and report real measured precision, recall, and mAP against a held-out split. `albertferre/shelf-product-identifier` (see `docs/PRIOR_ART.md`) already publishes a YOLOv8m checkpoint fine-tuned this way on Kaggle under an MIT-licensed repository; it was not pulled into this project only because fetching it requires Kaggle account credentials this environment does not have, not because of a technical or licensing blocker.
+- SKU or brand recognition via embeddings (for example MobileNetV3 or DINOv2) and a similarity index, following the approach in `Alijanloo/Retail-Shelf-Monitoring` and `albertferre/shelf-product-identifier` (see `docs/PRIOR_ART.md`).
 - Temporal consensus across video frames for deployments with a fixed camera, to reduce single-frame false positives before an alert fires.
 - Tiled or sliced inference (for example SAHI) to improve recall on small, densely packed products, without requiring a training run.
 

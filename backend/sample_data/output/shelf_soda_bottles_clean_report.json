@@ -1,14 +1,7 @@
 {
   "image_width": 1280,
   "image_height": 1707,
-  "config": {
-    "confidence_threshold": 0.15,
-    "iou_threshold": 0.45,
-    "dbscan_eps_factor": 0.25,
-    "gap_width_factor": 1.35,
-    "understocked_occupancy_threshold": 0.75,
-    "min_detections_for_confidence": 2
-  },
+  "processing_time_ms": 2998.5,
   "shelf_regions": [
     {
       "region_id": 0,
@@ -324,6 +317,5 @@
     "total_facings": 23,
     "total_estimated_missing_facings": 3
   },
-  "shelf_count_note": "Expected 2 shelves but 3 product rows were detected. 1 extra row(s) may mean a single physical shelf was split into two clusters, for example if it holds two visually distinct product groups with a wide gap between them.",
-  "processing_time_ms": 2874.2
+  "shelf_count_note": "Expected 2 shelves but 3 product rows were detected. 1 extra row(s) may mean a single physical shelf was split into two clusters, for example if it holds two visually distinct product groups with a wide gap between them."
 }

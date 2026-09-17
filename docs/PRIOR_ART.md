@@ -1,6 +1,6 @@
 # Prior art review
 
-This document summarizes ten public repositories relevant to retail shelf analytics, verified to exist via the GitHub API before being cited here, plus the datasets and techniques they rely on. The goal is to establish what a mature pipeline actually looks like before changing this project's architecture.
+This document summarizes public repositories relevant to retail shelf analytics, each verified to exist via the GitHub API before being cited here, plus the datasets and techniques they rely on. The goal is to establish what a mature pipeline actually looks like before changing this project's architecture.
 
 ## Repositories reviewed
 
@@ -27,6 +27,14 @@ Takeaway: even a well-executed dense-detection project stops short of claiming f
 Two-stage pipeline: YOLOv5 fine-tuned on SKU-110K for localization, ResNet-18 fine-tuned on the Grocery Store Dataset for per-product classification. Reported, real numbers: detection mAP@0.5 = 88.9%, precision/recall = 89.6% / 81.8%; classification accuracy 78.31% across 81 categories.
 
 Takeaway: this is the closest real benchmark for "what does a SKU-110K-fine-tuned YOLO actually score." It confirms that fine-tuning is what closes the gap between a COCO-generic detector and usable retail recall, and gives an honest recall ceiling (81.8%) even after fine-tuning, so a fine-tuned model is a large improvement, not a silver bullet.
+
+### albertferre/shelf-product-identifier (71 stars)
+
+A YOLOv8m detector fine-tuned on SKU-110K for facing localization, then image embeddings (compared with cosine similarity, visualized with t-SNE) to cluster facing crops into product groups, which are manually labeled once to build a small knowledge base. New crops are then matched to the closest known cluster. The author's own reported result: 2 of 3 products in a held-out test photo were classified correctly, with the one miss attributed to a training-set logo mismatch, stated plainly rather than smoothed over.
+
+The trained YOLOv8m checkpoint and training notebook are published on Kaggle (`albertferre/sku-facings-detector`), and the GitHub repository itself is MIT licensed. This checkpoint was **not** integrated into this project: downloading a Kaggle notebook's output artifact requires Kaggle account credentials this environment does not have, and the weights are not otherwise mirrored as a plain downloadable file. It is recorded here as a concrete, real candidate for a future upgrade (see the Roadmap in the main README) rather than something already verified end to end.
+
+Takeaway: embeddings-based facing counting (as opposed to per-box class labels) is a real, working way to get product-level identity out of a class-agnostic dense detector, and this project independently confirms fine-tuning on SKU-110K is what other teams reach for first, before ever getting to the embeddings step.
 
 ### TalhaFarook/ShelfSight (15 stars)
 

@@ -23,10 +23,27 @@ class Settings(BaseSettings):
     default_confidence: float = 0.35
     default_iou: float = 0.45
 
-    # Shelf-region grouping
-    row_gap_factor: float = 1.6
-    """A vertical gap between detections larger than (row_gap_factor * median
-    box height) is treated as the boundary between two shelf rows."""
+    # Detection post-processing
+    containment_suppression_threshold: float = 0.85
+    """If a detection's box overlaps a larger detection's box by at least
+    this fraction of its own area, it is dropped as a duplicate or a
+    structural false positive (e.g. a "refrigerator" box swallowing several
+    real "bottle" boxes)."""
+
+    # Shelf-region grouping (density-based clustering, see shelf_analysis.py)
+    dbscan_eps_factor: float = 0.25
+    """Detections are clustered into shelf rows using DBSCAN with a
+    scale-normalized distance: two detections are in the same row if their
+    vertical centers are within (dbscan_eps_factor * their average box
+    height) of each other. Normalizing by box height keeps the threshold
+    meaningful across a single perspective-distorted photo, where near
+    objects are much larger than far ones. Tuned empirically against both
+    bundled sample photos; see docs/AUDIT.md."""
+
+    min_detections_for_confidence: int = 2
+    """A region with fewer detections than this is reported as UNKNOWN
+    rather than OK/UNDERSTOCKED/EMPTY, since occupancy and gap statistics
+    are not meaningful from 0 or 1 data points."""
 
     gap_width_factor: float = 1.35
     """A horizontal gap between neighboring facings larger than

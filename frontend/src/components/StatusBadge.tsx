@@ -4,6 +4,7 @@ const STATUS_LABEL: Record<RegionStatus, string> = {
   ok: "OK",
   understocked: "Under-stocked",
   empty: "Empty",
+  unknown: "Unknown",
 };
 
 export function StatusBadge({ status }: { status: RegionStatus }) {

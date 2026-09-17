@@ -112,6 +112,19 @@ body {
   padding: 8px 10px;
 }
 
+.checkbox-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.checkbox-control small {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
 .primary-button,
 .secondary-button {
   border: none;
@@ -147,6 +160,16 @@ body {
 
 .secondary-button:hover {
   border-color: var(--color-accent);
+}
+
+.note-banner {
+  padding: 12px 16px;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 .error-banner {
@@ -282,6 +305,11 @@ body {
 .status-badge--empty {
   background: rgba(239, 68, 68, 0.15);
   color: var(--color-danger);
+}
+
+.status-badge--unknown {
+  background: rgba(148, 163, 184, 0.18);
+  color: #94a3b8;
 }
 
 .empty-state {

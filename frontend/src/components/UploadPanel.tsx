@@ -17,6 +17,7 @@ export function UploadPanel({ isLoading, onAnalyze }: UploadPanelProps) {
   const [confidence, setConfidence] = useState(0.35);
   const [iou, setIou] = useState(0.45);
   const [expectedShelfCount, setExpectedShelfCount] = useState<string>("");
+  const [debug, setDebug] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +40,7 @@ export function UploadPanel({ isLoading, onAnalyze }: UploadPanelProps) {
       confidence,
       iou,
       expectedShelfCount: expectedShelfCount ? Number(expectedShelfCount) : undefined,
+      debug,
     });
   }
 
@@ -109,12 +111,19 @@ export function UploadPanel({ isLoading, onAnalyze }: UploadPanelProps) {
             type="number"
             min={1}
             max={20}
-            placeholder="auto-detect"
+            placeholder="not provided"
             value={expectedShelfCount}
             onChange={(e) => setExpectedShelfCount(e.target.value)}
           />
         </label>
       </div>
+
+      <label className="checkbox-control">
+        <input type="checkbox" checked={debug} onChange={(e) => setDebug(e.target.checked)} />
+        <span>
+          Debug view <small>(per-box confidence labels and full-width shelf banners, for troubleshooting)</small>
+        </span>
+      </label>
 
       <button type="submit" className="primary-button" disabled={!selectedFile || isLoading}>
         {isLoading ? "Analyzing…" : "Analyze shelf"}

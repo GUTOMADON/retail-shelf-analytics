@@ -18,7 +18,7 @@ export class AnalysisApiError extends Error {
  */
 export async function analyzeShelfImage(
   file: File,
-  { confidence, iou, expectedShelfCount }: AnalysisRequestParams,
+  { confidence, iou, expectedShelfCount, debug }: AnalysisRequestParams,
 ): Promise<AnalysisReport> {
   const formData = new FormData();
   formData.append("file", file);
@@ -26,6 +26,7 @@ export async function analyzeShelfImage(
   const searchParams = new URLSearchParams({
     confidence: confidence.toString(),
     iou: iou.toString(),
+    debug: (debug ?? false).toString(),
   });
   if (expectedShelfCount) {
     searchParams.set("expected_shelf_count", expectedShelfCount.toString());

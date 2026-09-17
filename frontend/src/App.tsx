@@ -63,7 +63,8 @@ export default function App() {
             </div>
 
             <div className="app__results-data">
-              <ComplianceSummaryPanel compliance={report.compliance} />
+              {report.shelf_count_note && <p className="note-banner">{report.shelf_count_note}</p>}
+              <ComplianceSummaryPanel compliance={report.compliance} processingTimeMs={report.processing_time_ms} />
               <ShelfSummaryTable regions={report.shelf_regions} />
               <button className="secondary-button" onClick={handleDownloadReport}>
                 Download JSON report

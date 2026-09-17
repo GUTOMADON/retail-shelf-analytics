@@ -25,7 +25,7 @@ export interface StockGap {
   estimated_missing_facings: number;
 }
 
-export type RegionStatus = "ok" | "understocked" | "empty";
+export type RegionStatus = "ok" | "understocked" | "empty" | "unknown";
 
 export interface ShelfRegion {
   region_id: number;
@@ -35,6 +35,7 @@ export interface ShelfRegion {
   detections: Detection[];
   gaps: StockGap[];
   occupancy_ratio: number;
+  avg_confidence: number;
   status: RegionStatus;
 }
 
@@ -43,6 +44,7 @@ export interface ComplianceSummary {
   ok_regions: number;
   understocked_regions: number;
   empty_regions: number;
+  unknown_regions: number;
   overall_occupancy_ratio: number;
   total_facings: number;
   total_estimated_missing_facings: number;
@@ -51,9 +53,10 @@ export interface ComplianceSummary {
 export interface AnalysisConfig {
   confidence_threshold: number;
   iou_threshold: number;
-  row_gap_factor: number;
+  dbscan_eps_factor: number;
   gap_width_factor: number;
   understocked_occupancy_threshold: number;
+  min_detections_for_confidence: number;
 }
 
 export interface AnalysisReport {
@@ -62,6 +65,8 @@ export interface AnalysisReport {
   config: AnalysisConfig;
   shelf_regions: ShelfRegion[];
   compliance: ComplianceSummary;
+  shelf_count_note: string | null;
+  processing_time_ms: number;
   annotated_image_base64: string;
 }
 
@@ -69,4 +74,5 @@ export interface AnalysisRequestParams {
   confidence: number;
   iou: number;
   expectedShelfCount?: number;
+  debug?: boolean;
 }

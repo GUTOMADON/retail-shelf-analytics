@@ -7,21 +7,33 @@ without changing any downstream code.
 
 The stock COCO-pretrained checkpoint returns all 80 COCO classes, most of
 which cannot appear as a shelf product (person, refrigerator, car, ...).
-`RETAIL_CLASS_ALLOWLIST` restricts output to classes that plausibly are a
-retail product, and `suppress_contained_boxes` removes boxes that are mostly
-swallowed by a larger box of a different class, which otherwise show up as
-oversized false positives overlapping real product detections.
+Three cleanup passes run on the raw output, in order:
+
+1. `filter_by_class` keeps only classes that plausibly are a retail product.
+2. `suppress_overlapping_boxes` is a class-agnostic greedy NMS on IoU, since
+   Ultralytics only runs NMS within each class.
+3. `suppress_contained_boxes` removes a box that fully contains several
+   other boxes (a coarse false-positive "umbrella"), which a plain IoU NMS
+   pass does not catch, since the umbrella box may have low IoU with each
+   individual child box while still fully enclosing all of them.
 """
 
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 import numpy as np
-from ultralytics import YOLO
 
 from app.config import get_settings
 from app.schemas import BoundingBox, Detection
+
+if TYPE_CHECKING:
+    # Imported for type checkers only. Ultralytics (and therefore torch) is
+    # loaded lazily inside ShelfDetector so that the pure post-processing
+    # helpers in this module can be imported and unit-tested without pulling
+    # in the model runtime.
+    from ultralytics import YOLO
 
 RETAIL_CLASS_ALLOWLIST: frozenset[str] = frozenset(
     {
@@ -71,23 +83,42 @@ def filter_by_class(detections: list[Detection], allowlist: frozenset[str]) -> l
     return [d for d in detections if d.class_name in allowlist]
 
 
+def _iou(a: BoundingBox, b: BoundingBox) -> float:
+    intersection = _intersection_area(a, b)
+    if intersection == 0:
+        return 0.0
+    union = _box_area(a) + _box_area(b) - intersection
+    return intersection / union if union > 0 else 0.0
+
+
+def suppress_overlapping_boxes(detections: list[Detection], iou_threshold: float) -> list[Detection]:
+    """Class-agnostic greedy NMS on IoU, keeping the higher-confidence box.
+
+    Ultralytics' own NMS runs per class, so two boxes of different classes
+    that genuinely describe the same physical object (for example a bottle
+    detected once as "bottle" and once as "vase") both survive. This is a
+    standard greedy NMS pass, run again across all kept classes together, as
+    a second line of defense behind `suppress_contained_boxes` below, which
+    only catches containment rather than general high-overlap duplicates.
+    """
+    ordered = sorted(detections, key=lambda d: d.confidence, reverse=True)
+    kept: list[Detection] = []
+    for candidate in ordered:
+        if all(_iou(candidate.bbox, k.bbox) < iou_threshold for k in kept):
+            kept.append(candidate)
+    return kept
+
+
 def suppress_contained_boxes(detections: list[Detection], containment_threshold: float) -> list[Detection]:
-    """Remove structural false-positive "umbrella" boxes and near-duplicates.
+    """Remove structural false-positive "umbrella" boxes.
 
-    Ultralytics applies non-max suppression per class, so a large box of one
-    class (for example a misclassified "refrigerator") is never compared
-    against overlapping boxes of another class (for example real "bottle"
-    detections underneath it). This is a class-agnostic cleanup pass applied
-    after the model's own per-class NMS, with two distinct rules:
-
-    - A box that contains two or more other, mutually non-overlapping boxes
-      is almost certainly a coarse false positive spanning several real
-      objects, so it is dropped and its children are kept. This is the
-      "refrigerator swallowing several bottles" case.
-    - A box that contains exactly one other box (a near-duplicate at a
-      different scale, or one fully nested inside the other) is resolved by
-      keeping whichever of the two has higher confidence, since in that case
-      there is no independent evidence for which one is the umbrella.
+    A box that contains two or more other, mutually non-overlapping boxes is
+    almost certainly a coarse false positive spanning several real objects
+    (for example a misclassified "refrigerator" box swallowing several real
+    "bottle" boxes underneath it), so it is dropped and its children are
+    kept. A box that contains exactly one other box is resolved by keeping
+    whichever of the two has higher confidence, since in that case there is
+    no independent evidence for which one is the umbrella.
     """
     if not detections:
         return []
@@ -119,6 +150,12 @@ class ShelfDetector:
     """Thin, typed wrapper around a YOLOv8 model for shelf-image inference."""
 
     def __init__(self, model_path: str, device: str = "cpu") -> None:
+        # Import ultralytics here rather than at module load. Loading it (and
+        # torch) is only needed to actually run inference; keeping it out of
+        # the module top level lets the pure helpers above be imported and
+        # tested with no model runtime installed.
+        from ultralytics import YOLO
+
         self._model = YOLO(model_path)
         self._device = device
 

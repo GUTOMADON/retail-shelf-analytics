@@ -17,7 +17,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.annotation import draw_annotations
 from app.config import get_settings
-from app.detection import RETAIL_CLASS_ALLOWLIST, filter_by_class, get_detector, suppress_contained_boxes
+from app.detection import (
+    RETAIL_CLASS_ALLOWLIST,
+    filter_by_class,
+    get_detector,
+    suppress_contained_boxes,
+    suppress_overlapping_boxes,
+)
 from app.schemas import AnalysisConfig, AnalysisReport
 from app.shelf_analysis import describe_shelf_count_mismatch, group_into_shelf_regions, summarize_compliance
 
@@ -81,6 +87,7 @@ async def analyze_shelf(
     detector = get_detector()
     raw_detections = detector.detect(image_bgr, confidence_threshold=confidence, iou_threshold=iou)
     detections = filter_by_class(raw_detections, RETAIL_CLASS_ALLOWLIST)
+    detections = suppress_overlapping_boxes(detections, settings.cross_class_iou_threshold)
     detections = suppress_contained_boxes(detections, settings.containment_suppression_threshold)
 
     regions = group_into_shelf_regions(
@@ -94,7 +101,7 @@ async def analyze_shelf(
     shelf_count_note = describe_shelf_count_mismatch(regions, expected_shelf_count)
 
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-    annotated_png = draw_annotations(image_rgb, regions, debug=debug)
+    annotated_png = draw_annotations(image_rgb, regions, debug=debug, compliance=compliance)
     annotated_base64 = base64.b64encode(annotated_png).decode("ascii")
 
     processing_time_ms = (time.perf_counter() - start_time) * 1000

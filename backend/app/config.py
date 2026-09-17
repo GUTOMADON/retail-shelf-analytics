@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     default_iou: float = 0.45
 
     # Detection post-processing
+    cross_class_iou_threshold: float = 0.5
+    """Class-agnostic greedy NMS threshold applied after detection. Two
+    boxes of different classes with IoU at or above this value are treated
+    as the same physical object and only the higher-confidence one is kept.
+    Ultralytics only runs NMS within each class, so this catches duplicates
+    that its own NMS cannot."""
+
     containment_suppression_threshold: float = 0.85
     """If a detection's box overlaps a larger detection's box by at least
     this fraction of its own area, it is dropped as a duplicate or a

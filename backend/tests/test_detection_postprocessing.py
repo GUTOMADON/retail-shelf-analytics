@@ -5,7 +5,7 @@ dependency on the YOLO model itself, so they are tested directly with
 synthetic Detection objects.
 """
 
-from app.detection import filter_by_class, suppress_contained_boxes
+from app.detection import filter_by_class, suppress_contained_boxes, suppress_overlapping_boxes
 from app.schemas import BoundingBox, Detection
 
 
@@ -66,3 +66,30 @@ def test_suppress_contained_boxes_drops_near_duplicate():
 
 def test_suppress_contained_boxes_empty_input():
     assert suppress_contained_boxes([], containment_threshold=0.85) == []
+
+
+def test_suppress_overlapping_boxes_drops_lower_confidence_duplicate():
+    """Two different classes describing the same physical object: Ultralytics
+    only runs NMS within a class, so this is the case it cannot catch."""
+    high_conf = _det(10, 10, 60, 90, name="bottle", confidence=0.8)
+    low_conf_duplicate = _det(12, 11, 61, 88, name="vase", confidence=0.4)
+
+    kept = suppress_overlapping_boxes([low_conf_duplicate, high_conf], iou_threshold=0.5)
+
+    assert len(kept) == 1
+    assert kept[0].class_name == "bottle"
+
+
+def test_suppress_overlapping_boxes_keeps_adjacent_non_duplicate_boxes():
+    """Two bottles standing side by side, touching but not the same object,
+    must both survive."""
+    left = _det(0, 0, 40, 100)
+    right = _det(39, 0, 79, 100)
+
+    kept = suppress_overlapping_boxes([left, right], iou_threshold=0.5)
+
+    assert len(kept) == 2
+
+
+def test_suppress_overlapping_boxes_empty_input():
+    assert suppress_overlapping_boxes([], iou_threshold=0.5) == []

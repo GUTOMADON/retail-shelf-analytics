@@ -17,7 +17,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.annotation import draw_annotations
 from app.config import get_settings
-from app.detection import RETAIL_CLASS_ALLOWLIST, ShelfDetector, filter_by_class, suppress_contained_boxes
+from app.detection import (
+    RETAIL_CLASS_ALLOWLIST,
+    ShelfDetector,
+    filter_by_class,
+    suppress_contained_boxes,
+    suppress_overlapping_boxes,
+)
 from app.shelf_analysis import describe_shelf_count_mismatch, group_into_shelf_regions, summarize_compliance
 
 SAMPLES = [
@@ -40,6 +46,7 @@ def run_sample(file_name: str, confidence: float, expected_shelf_count: int, deb
     start = time.perf_counter()
     raw_detections = detector.detect(image_bgr, confidence_threshold=confidence, iou_threshold=0.45)
     detections = filter_by_class(raw_detections, RETAIL_CLASS_ALLOWLIST)
+    detections = suppress_overlapping_boxes(detections, settings.cross_class_iou_threshold)
     detections = suppress_contained_boxes(detections, settings.containment_suppression_threshold)
 
     regions = group_into_shelf_regions(
@@ -60,7 +67,7 @@ def run_sample(file_name: str, confidence: float, expected_shelf_count: int, deb
         print(f"  note: {note}")
 
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-    annotated_png = draw_annotations(image_rgb, regions, debug=debug)
+    annotated_png = draw_annotations(image_rgb, regions, debug=debug, compliance=compliance)
     annotated_image = Image.open(io.BytesIO(annotated_png)).convert("RGB")
     annotated_image.save(OUTPUT_DIR / f"{output_stem}.jpg", "JPEG", quality=90, optimize=True)
 

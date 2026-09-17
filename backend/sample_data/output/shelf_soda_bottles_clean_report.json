@@ -1,0 +1,329 @@
+{
+  "image_width": 1280,
+  "image_height": 1707,
+  "config": {
+    "confidence_threshold": 0.15,
+    "iou_threshold": 0.45,
+    "dbscan_eps_factor": 0.25,
+    "gap_width_factor": 1.35,
+    "understocked_occupancy_threshold": 0.75,
+    "min_detections_for_confidence": 2
+  },
+  "shelf_regions": [
+    {
+      "region_id": 0,
+      "y_start": 84.03143310546875,
+      "y_end": 667.5535888671875,
+      "facing_count": 10,
+      "detections": [
+        {
+          "bbox": {
+            "x1": 1089.7587890625,
+            "y1": 168.8097381591797,
+            "x2": 1271.31884765625,
+            "y2": 667.5535888671875
+          },
+          "confidence": 0.7542853951454163,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 1035.96826171875,
+            "y1": 147.28494262695312,
+            "x2": 1206.19970703125,
+            "y2": 626.43505859375
+          },
+          "confidence": 0.7964854836463928,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 395.8587646484375,
+            "y1": 144.17324829101562,
+            "x2": 514.2239990234375,
+            "y2": 602.7613525390625
+          },
+          "confidence": 0.7898456454277039,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 625.46875,
+            "y1": 217.3020782470703,
+            "x2": 746.0223999023438,
+            "y2": 636.2451782226562
+          },
+          "confidence": 0.7456963062286377,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 734.721923828125,
+            "y1": 193.82803344726562,
+            "x2": 852.8558349609375,
+            "y2": 597.5203247070312
+          },
+          "confidence": 0.812100887298584,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 505.99163818359375,
+            "y1": 215.82086181640625,
+            "x2": 623.20166015625,
+            "y2": 613.4824829101562
+          },
+          "confidence": 0.5573559403419495,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 720.6058959960938,
+            "y1": 84.03143310546875,
+            "x2": 781.9498901367188,
+            "y2": 356.59857177734375
+          },
+          "confidence": 0.2499483972787857,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 659.9551391601562,
+            "y1": 153.1776123046875,
+            "x2": 732.8756103515625,
+            "y2": 364.22003173828125
+          },
+          "confidence": 0.21919547021389008,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 465.580078125,
+            "y1": 151.5126953125,
+            "x2": 529.202392578125,
+            "y2": 348.07659912109375
+          },
+          "confidence": 0.3144669234752655,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 1251.6641845703125,
+            "y1": 200.09950256347656,
+            "x2": 1279.626220703125,
+            "y2": 426.61566162109375
+          },
+          "confidence": 0.16572216153144836,
+          "class_id": 39,
+          "class_name": "bottle"
+        }
+      ],
+      "gaps": [
+        {
+          "x_start": 852.8558349609375,
+          "x_end": 1035.96826171875,
+          "width_px": 183.1124267578125,
+          "estimated_missing_facings": 2
+        }
+      ],
+      "occupancy_ratio": 0.8517,
+      "avg_confidence": 0.5405,
+      "status": "understocked"
+    },
+    {
+      "region_id": 1,
+      "y_start": 698.9335327148438,
+      "y_end": 1139.952392578125,
+      "facing_count": 12,
+      "detections": [
+        {
+          "bbox": {
+            "x1": 980.0782470703125,
+            "y1": 763.4972534179688,
+            "x2": 1105.3282470703125,
+            "y2": 1126.825927734375
+          },
+          "confidence": 0.6188816428184509,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 1069.4580078125,
+            "y1": 809.909423828125,
+            "x2": 1196.82958984375,
+            "y2": 1139.952392578125
+          },
+          "confidence": 0.7197604775428772,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 885.67138671875,
+            "y1": 778.8162841796875,
+            "x2": 998.3711547851562,
+            "y2": 1109.52587890625
+          },
+          "confidence": 0.7049833536148071,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 181.319580078125,
+            "y1": 698.9335327148438,
+            "x2": 289.79022216796875,
+            "y2": 1036.1474609375
+          },
+          "confidence": 0.5688530206680298,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 798.7316284179688,
+            "y1": 757.2095336914062,
+            "x2": 903.7311401367188,
+            "y2": 1103.4005126953125
+          },
+          "confidence": 0.7671055793762207,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 107.36858367919922,
+            "y1": 702.9776611328125,
+            "x2": 218.10533142089844,
+            "y2": 1029.6373291015625
+          },
+          "confidence": 0.48129692673683167,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 261.3511657714844,
+            "y1": 731.2023315429688,
+            "x2": 365.34014892578125,
+            "y2": 1045.5389404296875
+          },
+          "confidence": 0.681835412979126,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 521.38916015625,
+            "y1": 767.0797729492188,
+            "x2": 619.32470703125,
+            "y2": 1073.016845703125
+          },
+          "confidence": 0.6328119039535522,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 349.5324401855469,
+            "y1": 738.899169921875,
+            "x2": 443.6562805175781,
+            "y2": 1056.345947265625
+          },
+          "confidence": 0.7687336802482605,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 434.4585876464844,
+            "y1": 762.9053344726562,
+            "x2": 530.1519775390625,
+            "y2": 1065.3974609375
+          },
+          "confidence": 0.7042930126190186,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 0.07890843600034714,
+            "y1": 736.11328125,
+            "x2": 77.03831481933594,
+            "y2": 991.20166015625
+          },
+          "confidence": 0.6195009350776672,
+          "class_id": 39,
+          "class_name": "bottle"
+        },
+        {
+          "bbox": {
+            "x1": 580.79296875,
+            "y1": 717.8812255859375,
+            "x2": 653.638427734375,
+            "y2": 984.2011108398438
+          },
+          "confidence": 0.17187179625034332,
+          "class_id": 39,
+          "class_name": "bottle"
+        }
+      ],
+      "gaps": [
+        {
+          "x_start": 653.638427734375,
+          "x_end": 798.7316284179688,
+          "width_px": 145.09320068359375,
+          "estimated_missing_facings": 1
+        }
+      ],
+      "occupancy_ratio": 0.8946,
+      "avg_confidence": 0.62,
+      "status": "understocked"
+    },
+    {
+      "region_id": 2,
+      "y_start": 1480.976318359375,
+      "y_end": 1609.4735107421875,
+      "facing_count": 1,
+      "detections": [
+        {
+          "bbox": {
+            "x1": 444.1457214355469,
+            "y1": 1480.976318359375,
+            "x2": 519.14208984375,
+            "y2": 1609.4735107421875
+          },
+          "confidence": 0.1993526667356491,
+          "class_id": 39,
+          "class_name": "bottle"
+        }
+      ],
+      "gaps": [],
+      "occupancy_ratio": 0.0,
+      "avg_confidence": 0.1994,
+      "status": "unknown"
+    }
+  ],
+  "compliance": {
+    "total_regions": 3,
+    "ok_regions": 0,
+    "understocked_regions": 2,
+    "empty_regions": 0,
+    "unknown_regions": 1,
+    "overall_occupancy_ratio": 0.8731,
+    "total_facings": 23,
+    "total_estimated_missing_facings": 3
+  },
+  "shelf_count_note": "Expected 2 shelves but 3 product rows were detected. 1 extra row(s) may mean a single physical shelf was split into two clusters, for example if it holds two visually distinct product groups with a wide gap between them.",
+  "processing_time_ms": 2874.2
+}

@@ -8,6 +8,7 @@ annotated image, ready for the frontend to render.
 from __future__ import annotations
 
 import base64
+import time
 
 import cv2
 import numpy as np
@@ -16,9 +17,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.annotation import draw_annotations
 from app.config import get_settings
-from app.detection import get_detector
+from app.detection import RETAIL_CLASS_ALLOWLIST, filter_by_class, get_detector, suppress_contained_boxes
 from app.schemas import AnalysisConfig, AnalysisReport
-from app.shelf_analysis import group_into_shelf_regions, summarize_compliance
+from app.shelf_analysis import describe_shelf_count_mismatch, group_into_shelf_regions, summarize_compliance
 
 settings = get_settings()
 
@@ -51,9 +52,14 @@ async def analyze_shelf(
         default=None,
         ge=1,
         le=20,
-        description="If provided, the image is split into this many fixed horizontal bands "
-        "so fully empty shelves can be detected. Otherwise, shelves are inferred "
-        "dynamically from the vertical spread of detections.",
+        description="Optional hint for how many shelves the photo shows. Rows are always found "
+        "from the detections themselves; if the count found does not match this hint, "
+        "the mismatch is reported in `shelf_count_note` instead of being silently resolved.",
+    ),
+    debug: bool = Query(
+        default=False,
+        description="Render the annotated image with per-box confidence labels and a full-width "
+        "status banner per shelf, for troubleshooting. Off by default for a readable result image.",
     ),
 ) -> AnalysisReport:
     if file.content_type not in {"image/jpeg", "image/png", "image/jpg", "image/webp"}:
@@ -70,24 +76,28 @@ async def analyze_shelf(
         raise HTTPException(status_code=400, detail="Could not decode the uploaded image.")
 
     height, width = image_bgr.shape[:2]
+    start_time = time.perf_counter()
 
     detector = get_detector()
-    detections = detector.detect(image_bgr, confidence_threshold=confidence, iou_threshold=iou)
+    raw_detections = detector.detect(image_bgr, confidence_threshold=confidence, iou_threshold=iou)
+    detections = filter_by_class(raw_detections, RETAIL_CLASS_ALLOWLIST)
+    detections = suppress_contained_boxes(detections, settings.containment_suppression_threshold)
 
     regions = group_into_shelf_regions(
         detections=detections,
-        image_width=width,
-        image_height=height,
-        row_gap_factor=settings.row_gap_factor,
+        dbscan_eps_factor=settings.dbscan_eps_factor,
         gap_width_factor=settings.gap_width_factor,
         understocked_occupancy_threshold=settings.understocked_occupancy_threshold,
-        expected_shelf_count=expected_shelf_count,
+        min_detections_for_confidence=settings.min_detections_for_confidence,
     )
     compliance = summarize_compliance(regions)
+    shelf_count_note = describe_shelf_count_mismatch(regions, expected_shelf_count)
 
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-    annotated_png = draw_annotations(image_rgb, regions)
+    annotated_png = draw_annotations(image_rgb, regions, debug=debug)
     annotated_base64 = base64.b64encode(annotated_png).decode("ascii")
+
+    processing_time_ms = (time.perf_counter() - start_time) * 1000
 
     return AnalysisReport(
         image_width=width,
@@ -95,11 +105,14 @@ async def analyze_shelf(
         config=AnalysisConfig(
             confidence_threshold=confidence,
             iou_threshold=iou,
-            row_gap_factor=settings.row_gap_factor,
+            dbscan_eps_factor=settings.dbscan_eps_factor,
             gap_width_factor=settings.gap_width_factor,
             understocked_occupancy_threshold=settings.understocked_occupancy_threshold,
+            min_detections_for_confidence=settings.min_detections_for_confidence,
         ),
         shelf_regions=regions,
         compliance=compliance,
+        shelf_count_note=shelf_count_note,
+        processing_time_ms=round(processing_time_ms, 1),
         annotated_image_base64=annotated_base64,
     )

@@ -1,19 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 620" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 760" font-family="Segoe UI, Helvetica, Arial, sans-serif">
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
     </marker>
   </defs>
 
-  <rect x="0" y="0" width="1240" height="620" fill="#ffffff"/>
+  <rect x="0" y="0" width="1240" height="760" fill="#ffffff"/>
 
-  <!-- Section labels -->
   <text x="130" y="36" font-size="13" fill="#64748b" font-weight="600" letter-spacing="1">CLIENT</text>
   <text x="470" y="36" font-size="13" fill="#64748b" font-weight="600" letter-spacing="1">FASTAPI BACKEND</text>
   <text x="1010" y="36" font-size="13" fill="#64748b" font-weight="600" letter-spacing="1">RESPONSE</text>
 
   <!-- Client box -->
-  <rect x="30" y="55" width="220" height="220" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <rect x="30" y="55" width="220" height="260" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
   <text x="140" y="90" font-size="16" font-weight="700" fill="#1e3a8a" text-anchor="middle">React + TypeScript</text>
   <text x="140" y="110" font-size="12" fill="#475569" text-anchor="middle">Vite SPA</text>
 
@@ -26,65 +25,77 @@
   <rect x="50" y="218" width="180" height="34" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
   <text x="140" y="240" font-size="12.5" fill="#1e40af" text-anchor="middle">ShelfSummaryTable</text>
 
-  <!-- Arrow client -> api -->
+  <rect x="50" y="262" width="180" height="34" rx="6" fill="#ffffff" stroke="#bfdbfe"/>
+  <text x="140" y="284" font-size="12.5" fill="#1e40af" text-anchor="middle">Clean / Debug view toggle</text>
+
   <path d="M 250 130 L 360 130" stroke="#475569" stroke-width="1.75" fill="none" marker-end="url(#arrow)"/>
   <text x="305" y="120" font-size="11" fill="#334155" text-anchor="middle">POST /api/analyze</text>
 
   <!-- API box -->
-  <rect x="360" y="55" width="300" height="480" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <rect x="360" y="55" width="300" height="620" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
   <text x="510" y="88" font-size="15" font-weight="700" fill="#0f172a" text-anchor="middle">app/main.py</text>
 
-  <rect x="385" y="105" width="250" height="40" rx="6" fill="#ffffff" stroke="#e2e8f0"/>
-  <text x="510" y="130" font-size="12.5" fill="#0f172a" text-anchor="middle">Decode upload (OpenCV)</text>
+  <rect x="385" y="105" width="250" height="38" rx="6" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="510" y="128" font-size="12.5" fill="#0f172a" text-anchor="middle">Decode upload (OpenCV)</text>
 
-  <path d="M 510 145 L 510 168" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 510 143 L 510 164" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <rect x="385" y="168" width="250" height="46" rx="6" fill="#fff7ed" stroke="#fdba74"/>
-  <text x="510" y="188" font-size="12.5" font-weight="600" fill="#9a3412" text-anchor="middle">ShelfDetector (YOLOv8)</text>
-  <text x="510" y="204" font-size="11" fill="#9a3412" text-anchor="middle">app/detection.py</text>
+  <rect x="385" y="164" width="250" height="44" rx="6" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="510" y="182" font-size="12.5" font-weight="600" fill="#9a3412" text-anchor="middle">ShelfDetector (YOLOv8)</text>
+  <text x="510" y="197" font-size="10.5" fill="#9a3412" text-anchor="middle">app/detection.py</text>
 
-  <path d="M 510 214 L 510 237" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 510 208 L 510 229" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <rect x="385" y="237" width="250" height="56" rx="6" fill="#f0fdf4" stroke="#86efac"/>
-  <text x="510" y="257" font-size="12.5" font-weight="600" fill="#166534" text-anchor="middle">Shelf region grouping</text>
-  <text x="510" y="273" font-size="11" fill="#166534" text-anchor="middle">rows, occupancy, gaps</text>
-  <text x="510" y="287" font-size="10.5" fill="#166534" text-anchor="middle">app/shelf_analysis.py</text>
+  <rect x="385" y="229" width="250" height="52" rx="6" fill="#fef9c3" stroke="#fde047"/>
+  <text x="510" y="247" font-size="12.5" font-weight="600" fill="#854d0e" text-anchor="middle">Class filter + cross-class NMS</text>
+  <text x="510" y="262" font-size="10.5" fill="#854d0e" text-anchor="middle">drops non-retail classes and</text>
+  <text x="510" y="275" font-size="10.5" fill="#854d0e" text-anchor="middle">contained/duplicate boxes</text>
 
-  <path d="M 510 293 L 510 316" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 510 281 L 510 302" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <rect x="385" y="316" width="250" height="46" rx="6" fill="#fef2f2" stroke="#fca5a5"/>
-  <text x="510" y="336" font-size="12.5" font-weight="600" fill="#991b1b" text-anchor="middle">Annotation renderer</text>
-  <text x="510" y="352" font-size="11" fill="#991b1b" text-anchor="middle">app/annotation.py (Pillow)</text>
+  <rect x="385" y="302" width="250" height="60" rx="6" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="510" y="320" font-size="12.5" font-weight="600" fill="#166534" text-anchor="middle">Row clustering (DBSCAN)</text>
+  <text x="510" y="335" font-size="10.5" fill="#166534" text-anchor="middle">scale-normalized vertical distance</text>
+  <text x="510" y="348" font-size="10.5" fill="#166534" text-anchor="middle">occupancy, gaps, avg confidence</text>
+  <text x="510" y="358" font-size="10" fill="#166534" text-anchor="middle">app/shelf_analysis.py</text>
 
-  <path d="M 510 362 L 510 385" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M 510 362 L 510 383" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-  <rect x="385" y="385" width="250" height="40" rx="6" fill="#ffffff" stroke="#e2e8f0"/>
-  <text x="510" y="410" font-size="12.5" fill="#0f172a" text-anchor="middle">AnalysisReport (Pydantic)</text>
+  <rect x="385" y="383" width="250" height="44" rx="6" fill="#fef2f2" stroke="#fca5a5"/>
+  <text x="510" y="401" font-size="12.5" font-weight="600" fill="#991b1b" text-anchor="middle">Annotation renderer</text>
+  <text x="510" y="416" font-size="10.5" fill="#991b1b" text-anchor="middle">Pillow, Clean or Debug mode</text>
 
-  <text x="510" y="450" font-size="11" fill="#64748b" text-anchor="middle">config.py — thresholds &amp; env settings</text>
-  <text x="510" y="470" font-size="11" fill="#64748b" text-anchor="middle">schemas.py — shared response contract</text>
+  <path d="M 510 427 L 510 448" stroke="#475569" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="385" y="448" width="250" height="38" rx="6" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="510" y="471" font-size="12.5" fill="#0f172a" text-anchor="middle">AnalysisReport (Pydantic)</text>
+
+  <text x="510" y="515" font-size="10.5" fill="#64748b" text-anchor="middle">config.py: thresholds and env settings</text>
+  <text x="510" y="535" font-size="10.5" fill="#64748b" text-anchor="middle">schemas.py: shared response contract</text>
+  <text x="510" y="555" font-size="10.5" fill="#64748b" text-anchor="middle">RETAIL_CLASS_ALLOWLIST restricts output</text>
+  <text x="510" y="573" font-size="10.5" fill="#64748b" text-anchor="middle">to plausible retail-product COCO classes</text>
 
   <!-- Model artifact -->
-  <rect x="700" y="168" width="150" height="46" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-dasharray="4 3"/>
-  <text x="775" y="188" font-size="11.5" fill="#9a3412" text-anchor="middle">yolov8n.pt</text>
-  <text x="775" y="203" font-size="10.5" fill="#9a3412" text-anchor="middle">(swappable weights)</text>
-  <path d="M 700 191 L 660 191" stroke="#94a3b8" stroke-width="1.25" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+  <rect x="700" y="164" width="150" height="46" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-dasharray="4 3"/>
+  <text x="775" y="184" font-size="11.5" fill="#9a3412" text-anchor="middle">yolov8n.pt</text>
+  <text x="775" y="199" font-size="10.5" fill="#9a3412" text-anchor="middle">(swappable weights)</text>
+  <path d="M 700 187 L 660 187" stroke="#94a3b8" stroke-width="1.25" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
 
   <!-- Arrow api -> response -->
-  <path d="M 660 405 L 960 405" stroke="#475569" stroke-width="1.75" fill="none" marker-end="url(#arrow)"/>
-  <text x="810" y="395" font-size="11" fill="#334155" text-anchor="middle">200 OK (JSON)</text>
+  <path d="M 660 467 L 960 467" stroke="#475569" stroke-width="1.75" fill="none" marker-end="url(#arrow)"/>
+  <text x="810" y="457" font-size="11" fill="#334155" text-anchor="middle">200 OK (JSON)</text>
 
   <!-- Response box -->
-  <rect x="960" y="330" width="250" height="150" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
-  <text x="1085" y="360" font-size="14" font-weight="700" fill="#1e3a8a" text-anchor="middle">AnalysisReport</text>
-  <text x="1085" y="385" font-size="11.5" fill="#334155" text-anchor="middle">annotated_image_base64</text>
-  <text x="1085" y="405" font-size="11.5" fill="#334155" text-anchor="middle">shelf_regions[]</text>
-  <text x="1085" y="425" font-size="11.5" fill="#334155" text-anchor="middle">compliance summary</text>
-  <text x="1085" y="445" font-size="11.5" fill="#334155" text-anchor="middle">config used</text>
+  <rect x="960" y="392" width="250" height="150" rx="12" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="1085" y="422" font-size="14" font-weight="700" fill="#1e3a8a" text-anchor="middle">AnalysisReport</text>
+  <text x="1085" y="447" font-size="11.5" fill="#334155" text-anchor="middle">annotated_image_base64</text>
+  <text x="1085" y="467" font-size="11.5" fill="#334155" text-anchor="middle">shelf_regions[] (status, avg_confidence)</text>
+  <text x="1085" y="487" font-size="11.5" fill="#334155" text-anchor="middle">compliance summary</text>
+  <text x="1085" y="507" font-size="11.5" fill="#334155" text-anchor="middle">shelf_count_note, processing_time_ms</text>
 
   <!-- Arrow response -> client (feedback loop) -->
-  <path d="M 1085 330 L 1085 60 L 260 60" stroke="#475569" stroke-width="1.75" fill="none" marker-end="url(#arrow)"/>
+  <path d="M 1085 392 L 1085 60 L 260 60" stroke="#475569" stroke-width="1.75" fill="none" marker-end="url(#arrow)"/>
   <text x="700" y="50" font-size="11" fill="#334155" text-anchor="middle">renders annotated image + tables</text>
 
-  <text x="620" y="600" font-size="11" fill="#94a3b8" text-anchor="middle">Retail Shelf Analytics — request/response pipeline</text>
+  <text x="620" y="720" font-size="11" fill="#94a3b8" text-anchor="middle">Retail Shelf Analytics: request/response pipeline</text>
 </svg>

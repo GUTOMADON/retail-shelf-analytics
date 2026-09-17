@@ -1,5 +1,12 @@
 # Retail Shelf Analytics
 
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
+![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-00FFFF?logo=ultralytics&logoColor=black)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
 Computer-vision pipeline that turns a single shelf photo into a stocking report — it detects every product facing, groups them into shelf regions, measures occupancy, and flags empty or under-stocked spaces automatically.
 
 ![Annotated shelf analysis result](backend/sample_data/output/shelf_soda_bottles_annotated.jpg)
@@ -267,7 +274,24 @@ This project uses the stock, COCO-pretrained `yolov8n` checkpoint — deliberate
 
 - **COCO has one grocery-adjacent class that matters here: `bottle`.** It has no concept of jars, cans, pouches, or boxes, so any shelf stocked with those will under-detect — this is exactly what happens on the `EMPTY` shelf flagged in the sauce-aisle screenshot above, which is not actually empty, it is stocked with jars the model was never trained to recognize.
 - **Strong camera angles distort the row-clustering assumption.** Dynamic clustering assumes shelves are roughly horizontal in the frame; a steep angle (as in the sauce-aisle photo) skews vertical centers and can merge or split rows incorrectly.
-- **Confidence threshold is a real trade-off, not just a slider.** Lowering it recovers faint detections (as used to reveal the gap in the hero image) but also lets in false positives — there is no single correct value across all photos.
+- **Confidence threshold is a real trade-off, not just a slider.** Lowering it recovers faint detections (as used to reveal the gap in the hero image) but also lets in false positives — there is no single correct value across all photos. The same photo, analyzed twice, makes the point directly:
+
+<table>
+<tr>
+<th align="center">confidence = 0.15 → gap correctly flagged</th>
+<th align="center">confidence = 0.50 → gap silently missed</th>
+</tr>
+<tr>
+<td><img src="backend/sample_data/output/shelf_soda_bottles_annotated.jpg" width="420"></td>
+<td><img src="backend/sample_data/output/shelf_soda_bottles_highconf_annotated.jpg" width="420"></td>
+</tr>
+<tr>
+<td align="center">11 facings · <b>understocked</b> · 93% occupancy</td>
+<td align="center">6 facings · <b>ok</b> · 100% occupancy</td>
+</tr>
+</table>
+
+At 0.50, the detector simply never sees the faint bottle silhouettes near the gap, so there is nothing for the gap-detection logic to compare against — the shelf reads as fully stocked when it is not. This is why the threshold is exposed as a first-class, per-request parameter instead of a fixed constant.
 
 For a production deployment, the model is the one component meant to be swapped, not rebuilt around: fine-tune a YOLOv8 checkpoint on a retail-specific dataset (e.g. SKU-110k, or a custom-labeled set of the target store's own products) and point `SHELF_YOLO_MODEL_PATH` at it — every other stage of the pipeline (grouping, occupancy, gap detection, annotation, API contract) is model-agnostic and needs no changes.
 

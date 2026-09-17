@@ -21,6 +21,14 @@ from app.shelf_analysis import group_into_shelf_regions, summarize_compliance
 SAMPLES = [
     {"file": "shelf_soda_bottles.jpg", "confidence": 0.15, "expected_shelf_count": 2},
     {"file": "shelf_sauce_aisle.jpg", "confidence": 0.12, "expected_shelf_count": 6},
+    # Same photo, higher confidence -- demonstrates the threshold trade-off
+    # documented in the README (the gap goes undetected at 0.50).
+    {
+        "file": "shelf_soda_bottles.jpg",
+        "confidence": 0.5,
+        "expected_shelf_count": 2,
+        "output_stem": "shelf_soda_bottles_highconf",
+    },
 ]
 
 OUTPUT_DIR = Path(__file__).parent / "output"
@@ -55,7 +63,7 @@ for sample in SAMPLES:
 
     # Re-encoded as JPEG (from the freshly rendered PNG bytes) to keep sample
     # output small enough to check into the repo alongside the README.
-    stem = Path(sample["file"]).stem
+    stem = sample.get("output_stem", Path(sample["file"]).stem)
     annotated_image = Image.open(io.BytesIO(annotated_png)).convert("RGB")
     annotated_image.save(OUTPUT_DIR / f"{stem}_annotated.jpg", "JPEG", quality=88, optimize=True)
     report = {

@@ -66,15 +66,15 @@ The root cause and the fix are both documented with exact file and line referenc
 
 ![Upload screen](docs/screenshots/ui_upload_empty.png)
 
-**Analysis result**, rendered from a real API response against the harder of the two bundled sample photos. Note the honest count-mismatch note instead of a fabricated sixth shelf, and the per-shelf confidence column:
+**Analysis result**, rendered from a real API response against the sauce-aisle sample, the steepest-angle and most crowded of the bundled photos. Note the honest count-mismatch note instead of a fabricated sixth shelf, and the per-shelf confidence column:
 
 ![Analysis result](docs/screenshots/ui_results.png)
 
 ## Examples: Clean vs Debug view
 
-Both bundled sample photos, run through the same live pipeline at the thresholds shown in [API reference](#api-reference), saved verbatim in `backend/sample_data/output/` and reproducible with `python backend/sample_data/generate_samples.py`.
+Two of the three bundled sample photos, run through the same live pipeline at the thresholds shown in [API reference](#api-reference), saved verbatim in `backend/sample_data/output/` and reproducible with `python backend/sample_data/generate_samples.py`.
 
-### Easier case: soda bottles, near-straight-on angle
+### Soda bottles, near-straight-on angle
 
 <table>
 <tr>
@@ -87,11 +87,11 @@ Both bundled sample photos, run through the same live pipeline at the thresholds
 </tr>
 <tr>
 <td align="center">87% occupancy, 23 facings across 3 detected regions, 3 est. missing facings</td>
-<td align="center">Per-box class and confidence labels plus a full-width status banner per shelf, for troubleshooting</td>
+<td align="center">Per-box class and confidence labels plus a full-width status banner per shelf, for troubleshooting. On the dense cluster of bottles top-left, the label anti-collision pass in <code>annotation.py</code> nudges a label that would overlap one already drawn instead of stacking illegible text</td>
 </tr>
 </table>
 
-### Harder case: sauce aisle, steep angle, 51 detections
+### Refrigerated dairy case, receding perspective
 
 <table>
 <tr>
@@ -99,18 +99,20 @@ Both bundled sample photos, run through the same live pipeline at the thresholds
 <th align="center">Debug view</th>
 </tr>
 <tr>
-<td><img src="backend/sample_data/output/shelf_sauce_aisle_clean.jpg" width="480"></td>
-<td><img src="backend/sample_data/output/shelf_sauce_aisle_debug.jpg" width="480"></td>
+<td><img src="backend/sample_data/output/shelf_dairy_case_clean.jpg" width="480"></td>
+<td><img src="backend/sample_data/output/shelf_dairy_case_debug.jpg" width="480"></td>
 </tr>
 <tr>
-<td align="center">79% occupancy, 51 facings across 5 detected shelves, 9 est. missing facings (1 OK, 3 under-stocked, 1 unknown)</td>
-<td align="center">The densest bundled photo, and the case the label anti-collision pass in <code>annotation.py</code> exists for: a label that would overlap one already drawn just above it is nudged down or dropped, instead of stacking illegible text</td>
+<td align="center">100% occupancy, 9 facings across 2 detected regions, 0 est. missing facings, both OK</td>
+<td align="center">Almost every carton next to the jugs is correctly left unboxed, since no COCO class maps to a carton; the one exception is the smooth-sided Almond Breeze carton, which the detector weakly guesses as <code>bottle</code> at 0.20 confidence. A real, visible instance of the detector coverage gap discussed in <a href="#limitations">Limitations</a>, not a hypothetical one</td>
 </tr>
 </table>
 
-This photo was captured with a shelf plan of 6 rows in mind. Only 5 product rows were actually detected, and rather than fabricate a sixth, the API surfaces the ambiguity directly in `shelf_count_note`:
+This is physically one continuous shelf of milk jugs receding away from the camera, but it was requested with a shelf count of 1 in mind. Because the near jugs and the far jugs differ enough in apparent size under perspective, the scale-normalized row clustering (see [How shelf row detection works](#how-shelf-row-detection-works)) splits them into two detected rows instead of one, and the API reports that honestly instead of forcing a single row:
 
-> Expected 6 shelves but only 5 product row(s) were detected. The remaining 1 may be fully out of stock (no products for the detector to anchor a row on), or two physical shelves may be close enough in this photo to have been grouped into one detected row. This cannot be told apart from geometry alone; manual review is recommended for the missing shelves.
+> Expected 1 shelves but 2 product rows were detected. 1 extra row(s) may mean a single physical shelf was split into two clusters, for example if it holds two visually distinct product groups with a wide gap between them.
+
+This is the same class of ambiguity documented for the sauce-aisle photo in the [Live demo](#live-demo) screenshot above, on a second, independent photo.
 
 ## Architecture
 
@@ -326,7 +328,7 @@ Backend settings are read from environment variables (or `backend/.env`), prefix
 | `SHELF_CONTAINMENT_SUPPRESSION_THRESHOLD` | 0.85 | Containment fraction above which a box is treated as a false-positive umbrella spanning several real objects |
 | `SHELF_SAME_CLASS_DEDUP_IOU` | none (disabled) | Optional fourth cleanup pass: collapse same-class boxes at or above this IoU, keeping the higher-confidence one. Targets the gap below Ultralytics' own per-class NMS threshold, roughly 0.30-0.45 |
 | `SHELF_TILED_INFERENCE` | `false` | Run inference on overlapping image tiles instead of the full frame, for recall on small products in a high-resolution photo. Costs roughly one inference call per tile |
-| `SHELF_DBSCAN_EPS_FACTOR` | 0.25 | Row clustering threshold, in units of average box height; tuned against both bundled sample photos, see `docs/AUDIT.md` |
+| `SHELF_DBSCAN_EPS_FACTOR` | 0.25 | Row clustering threshold, in units of average box height; tuned empirically against the bundled sample photos, see `docs/AUDIT.md` |
 | `SHELF_MIN_DETECTIONS_FOR_CONFIDENCE` | 2 | Regions with fewer detections than this are reported as `unknown` |
 | `SHELF_GAP_WIDTH_FACTOR` | 1.35 | Horizontal gap multiplier that flags a stock gap |
 | `SHELF_UNDERSTOCKED_OCCUPANCY_THRESHOLD` | 0.75 | Occupancy ratio below which a region is flagged `understocked` |

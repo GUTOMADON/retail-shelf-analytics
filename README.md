@@ -110,7 +110,7 @@ All three functions are pure, model-free, and covered directly by unit tests in 
 | Image processing | OpenCV and Pillow | OpenCV for decoding, Pillow for layered annotation drawing |
 | Frontend framework | React 18 and TypeScript | Typed components matching the backend's typed contract |
 | Build tooling | Vite | Fast dev server and a small production build |
-| Testing | pytest | 18 tests, all pure Python and geometry, no model dependency |
+| Testing | pytest | 24 tests, all pure Python and geometry, no model dependency |
 
 ## Project structure
 
@@ -281,6 +281,8 @@ Backend settings are read from environment variables (or `backend/.env`), prefix
 | `SHELF_DEFAULT_IOU` | 0.45 | Default IoU threshold if not passed per request |
 | `SHELF_CROSS_CLASS_IOU_THRESHOLD` | 0.5 | Class-agnostic greedy NMS threshold; two boxes of different classes at or above this IoU are treated as the same object |
 | `SHELF_CONTAINMENT_SUPPRESSION_THRESHOLD` | 0.85 | Containment fraction above which a box is treated as a false-positive umbrella spanning several real objects |
+| `SHELF_SAME_CLASS_DEDUP_IOU` | none (disabled) | Optional fourth cleanup pass: collapse same-class boxes at or above this IoU, keeping the higher-confidence one. Targets the gap below Ultralytics' own per-class NMS threshold, roughly 0.30-0.45 |
+| `SHELF_TILED_INFERENCE` | `false` | Run inference on overlapping image tiles instead of the full frame, for recall on small products in a high-resolution photo. Costs roughly one inference call per tile |
 | `SHELF_DBSCAN_EPS_FACTOR` | 0.25 | Row clustering threshold, in units of average box height; tuned against both bundled sample photos, see `docs/AUDIT.md` |
 | `SHELF_MIN_DETECTIONS_FOR_CONFIDENCE` | 2 | Regions with fewer detections than this are reported as `unknown` |
 | `SHELF_GAP_WIDTH_FACTOR` | 1.35 | Horizontal gap multiplier that flags a stock gap |
@@ -297,10 +299,10 @@ source .venv/Scripts/activate
 pytest -v
 ```
 
-18 tests across two files, all pure Python with synthetic input, no model or GPU required:
+24 tests across two files, all pure Python with synthetic input, no model or GPU required:
 
 - `test_shelf_analysis.py`: row clustering, the specific "never invent an empty row" guarantee, gap detection, the `unknown` status, the shelf-count mismatch note, and edge cases (zero detections, a single detection, zero-width boxes that previously caused a division-by-zero crash).
-- `test_detection_postprocessing.py`: class allowlist filtering and containment suppression, including a direct regression test for the reported "refrigerator box swallowing real bottle boxes" case.
+- `test_detection_postprocessing.py`: class allowlist filtering, containment suppression (including a direct regression test for the reported "refrigerator box swallowing real bottle boxes" case), cross-class IoU suppression, and the optional same-class dedup pass.
 
 ## Evaluation
 
@@ -330,7 +332,6 @@ Documented as not implemented, with the specific reason, rather than attempted w
 - Fine-tune a YOLOv8 or YOLO11 checkpoint on SKU-110K or a comparable labeled retail dataset, and report real measured precision, recall, and mAP against a held-out split. `albertferre/shelf-product-identifier` (see `docs/PRIOR_ART.md`) already publishes a YOLOv8m checkpoint fine-tuned this way on Kaggle under an MIT-licensed repository; it was not pulled into this project only because fetching it requires Kaggle account credentials this environment does not have, not because of a technical or licensing blocker.
 - SKU or brand recognition via embeddings (for example MobileNetV3 or DINOv2) and a similarity index, following the approach in `Alijanloo/Retail-Shelf-Monitoring` and `albertferre/shelf-product-identifier` (see `docs/PRIOR_ART.md`).
 - Temporal consensus across video frames for deployments with a fixed camera, to reduce single-frame false positives before an alert fires.
-- Tiled or sliced inference (for example SAHI) to improve recall on small, densely packed products, without requiring a training run.
 
 ## License
 

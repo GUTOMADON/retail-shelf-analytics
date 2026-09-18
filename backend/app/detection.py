@@ -16,6 +16,16 @@ Three cleanup passes run on the raw output, in order:
    other boxes (a coarse false-positive "umbrella"), which a plain IoU NMS
    pass does not catch, since the umbrella box may have low IoU with each
    individual child box while still fully enclosing all of them.
+
+Two further passes are opt-in and off by default, since the three above are
+already tuned and validated against the bundled sample photos:
+
+- `deduplicate_same_class_boxes` collapses same-class boxes that overlap
+  below Ultralytics' own per-class NMS threshold, gated by
+  `SHELF_SAME_CLASS_DEDUP_IOU` (default `None`, disabled).
+- `detect_tiled` runs inference on overlapping image tiles instead of the
+  full frame, for recall on small products in a high-resolution photo,
+  gated by `SHELF_TILED_INFERENCE` (default `False`).
 """
 
 from __future__ import annotations
@@ -146,6 +156,30 @@ def suppress_contained_boxes(detections: list[Detection], containment_threshold:
     return [d for d in ordered if id(d) not in dropped]
 
 
+def deduplicate_same_class_boxes(detections: list[Detection], iou_threshold: float) -> list[Detection]:
+    """Optional second pass for same-class near-duplicates below Ultralytics'
+    own NMS threshold, keeping the higher-confidence box.
+
+    Ultralytics already removes same-class duplicates at or above its own
+    `iou` parameter (typically 0.45-0.7). A pair of same-class boxes can
+    still partially overlap below that value while being one physical
+    object detected twice at slightly different scales, which shows up more
+    often when tiled inference is on and the same product spans two
+    overlapping tiles. This is intentionally same-class only: two different
+    classes at the same overlap are a legitimate case for
+    `suppress_overlapping_boxes` above, not for this pass, which is why it
+    is a separate opt-in function rather than a lowered threshold on that
+    one.
+    """
+    ordered = sorted(detections, key=lambda d: d.confidence, reverse=True)
+    kept: list[Detection] = []
+    for candidate in ordered:
+        same_class_kept = (k for k in kept if k.class_name == candidate.class_name)
+        if all(_iou(candidate.bbox, k.bbox) < iou_threshold for k in same_class_kept):
+            kept.append(candidate)
+    return kept
+
+
 class ShelfDetector:
     """Thin, typed wrapper around a YOLOv8 model for shelf-image inference."""
 
@@ -194,6 +228,77 @@ class ShelfDetector:
                     )
                 )
         return detections
+
+
+_TILE_SIZE = 640
+"""Tile edge length in pixels for sliced inference. Matches yolov8n's native
+training resolution, so each tile is inferred at full model resolution
+instead of the whole photo being downscaled to fit, which is what causes
+small products to lose detail in the first place."""
+
+_TILE_OVERLAP_RATIO = 0.2
+"""Fraction of a tile that overlaps its neighbor, following the standard
+SAHI (slicing-aided hyper inference) default: large enough that an object
+sitting on a tile boundary is still fully visible inside at least one tile,
+small enough not to multiply tile count and inference cost."""
+
+
+def _tile_origins(dimension: int, tile_size: int, overlap_ratio: float) -> list[int]:
+    """1D sliding-window origins covering `dimension`, snapping the final
+    tile back to the far edge instead of overshooting it."""
+    if dimension <= tile_size:
+        return [0]
+    stride = max(1, round(tile_size * (1 - overlap_ratio)))
+    origins = list(range(0, dimension - tile_size + 1, stride))
+    if origins[-1] != dimension - tile_size:
+        origins.append(dimension - tile_size)
+    return origins
+
+
+def detect_tiled(
+    detector: ShelfDetector,
+    image: np.ndarray,
+    confidence_threshold: float,
+    iou_threshold: float,
+) -> list[Detection]:
+    """Sliced inference (SAHI-style) for small-product recall on a
+    high-resolution shelf photo.
+
+    Ultralytics resizes its input to a fixed square before inference, so a
+    small product in a large photo can shrink below the resolution the
+    model can still resolve. Splitting the image into overlapping tiles at
+    the model's native size and running `ShelfDetector.detect` on each tile
+    separately keeps every crop close to full resolution; each tile's boxes
+    are then translated back into full-image coordinates by adding the
+    tile's own origin.
+
+    An object that falls in the overlap between two tiles is detected twice,
+    once per tile, at slightly different box coordinates. This function
+    does not deduplicate that itself: the caller runs the same class filter
+    and cross-class IoU and containment passes on the merged output
+    regardless of whether tiling was used, which already removes it.
+    """
+    height, width = image.shape[:2]
+    x_origins = _tile_origins(width, _TILE_SIZE, _TILE_OVERLAP_RATIO)
+    y_origins = _tile_origins(height, _TILE_SIZE, _TILE_OVERLAP_RATIO)
+
+    detections: list[Detection] = []
+    for y0 in y_origins:
+        y1 = min(y0 + _TILE_SIZE, height)
+        for x0 in x_origins:
+            x1 = min(x0 + _TILE_SIZE, width)
+            tile = image[y0:y1, x0:x1]
+            for det in detector.detect(tile, confidence_threshold, iou_threshold):
+                b = det.bbox
+                detections.append(
+                    Detection(
+                        bbox=BoundingBox(x1=b.x1 + x0, y1=b.y1 + y0, x2=b.x2 + x0, y2=b.y2 + y0),
+                        confidence=det.confidence,
+                        class_id=det.class_id,
+                        class_name=det.class_name,
+                    )
+                )
+    return detections
 
 
 @lru_cache

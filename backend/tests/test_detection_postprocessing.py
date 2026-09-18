@@ -5,7 +5,12 @@ dependency on the YOLO model itself, so they are tested directly with
 synthetic Detection objects.
 """
 
-from app.detection import filter_by_class, suppress_contained_boxes, suppress_overlapping_boxes
+from app.detection import (
+    deduplicate_same_class_boxes,
+    filter_by_class,
+    suppress_contained_boxes,
+    suppress_overlapping_boxes,
+)
 from app.schemas import BoundingBox, Detection
 
 
@@ -93,3 +98,35 @@ def test_suppress_overlapping_boxes_keeps_adjacent_non_duplicate_boxes():
 
 def test_suppress_overlapping_boxes_empty_input():
     assert suppress_overlapping_boxes([], iou_threshold=0.5) == []
+
+
+def test_deduplicate_same_class_boxes_collapses_overlap_above_floor():
+    """Two same-class boxes at IoU ~0.35, below Ultralytics' own per-class
+    NMS threshold but clearly the same physical object, collapse to one."""
+    high_conf = _det(0, 0, 10, 10, name="bottle", confidence=0.8)
+    low_conf = _det(4.8, 0, 14.8, 10, name="bottle", confidence=0.5)
+
+    kept = deduplicate_same_class_boxes([high_conf, low_conf], iou_threshold=0.3)
+
+    assert len(kept) == 1
+    assert kept[0].confidence == 0.8
+
+
+def test_deduplicate_same_class_boxes_keeps_different_classes_at_same_iou():
+    """The same overlap geometry across two different classes is left alone;
+    that case belongs to suppress_overlapping_boxes, not this pass."""
+    bottle = _det(0, 0, 10, 10, name="bottle", confidence=0.8)
+    cup = _det(4.8, 0, 14.8, 10, name="cup", confidence=0.5)
+
+    kept = deduplicate_same_class_boxes([bottle, cup], iou_threshold=0.3)
+
+    assert len(kept) == 2
+
+
+def test_deduplicate_same_class_boxes_keeps_both_below_floor():
+    a = _det(0, 0, 10, 10, name="bottle", confidence=0.8)
+    b = _det(8, 0, 18, 10, name="bottle", confidence=0.5)
+
+    kept = deduplicate_same_class_boxes([a, b], iou_threshold=0.3)
+
+    assert len(kept) == 2

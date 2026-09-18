@@ -37,6 +37,24 @@ class Settings(BaseSettings):
     structural false positive (e.g. a "refrigerator" box swallowing several
     real "bottle" boxes)."""
 
+    same_class_dedup_iou: float | None = None
+    """Optional fourth cleanup pass: collapse same-class boxes whose IoU is
+    at or above this value, keeping the higher-confidence one. Meant for the
+    gap below Ultralytics' own per-class NMS threshold (roughly 0.30-0.45),
+    where two boxes of the same class can still partially overlap while
+    describing one physical object. `None` disables the pass entirely, which
+    is the default since the three cleanup passes above are already tuned
+    and validated against the bundled sample photos."""
+
+    tiled_inference: bool = False
+    """When enabled, an image is split into overlapping tiles and each tile
+    is run through the detector separately, then the boxes are mapped back
+    to full-image coordinates before the usual cleanup passes run. Improves
+    recall on small products in a high-resolution photo at the cost of
+    roughly one inference call per tile. Off by default: it changes
+    inference cost and detection counts, so it should be an explicit,
+    deliberate choice per deployment rather than a silent behavior change."""
+
     # Shelf-region grouping (density-based clustering, see shelf_analysis.py)
     dbscan_eps_factor: float = 0.25
     """Detections are clustered into shelf rows using DBSCAN with a

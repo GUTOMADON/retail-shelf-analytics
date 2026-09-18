@@ -19,6 +19,8 @@ from app.annotation import draw_annotations
 from app.config import get_settings
 from app.detection import (
     RETAIL_CLASS_ALLOWLIST,
+    deduplicate_same_class_boxes,
+    detect_tiled,
     filter_by_class,
     get_detector,
     suppress_contained_boxes,
@@ -85,10 +87,15 @@ async def analyze_shelf(
     start_time = time.perf_counter()
 
     detector = get_detector()
-    raw_detections = detector.detect(image_bgr, confidence_threshold=confidence, iou_threshold=iou)
+    if settings.tiled_inference:
+        raw_detections = detect_tiled(detector, image_bgr, confidence_threshold=confidence, iou_threshold=iou)
+    else:
+        raw_detections = detector.detect(image_bgr, confidence_threshold=confidence, iou_threshold=iou)
     detections = filter_by_class(raw_detections, RETAIL_CLASS_ALLOWLIST)
     detections = suppress_overlapping_boxes(detections, settings.cross_class_iou_threshold)
     detections = suppress_contained_boxes(detections, settings.containment_suppression_threshold)
+    if settings.same_class_dedup_iou is not None:
+        detections = deduplicate_same_class_boxes(detections, settings.same_class_dedup_iou)
 
     regions = group_into_shelf_regions(
         detections=detections,

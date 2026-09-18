@@ -17,6 +17,7 @@ Detects product facings on a shelf photo, groups them into physical shelf rows, 
 - [What this is and is not](#what-this-is-and-is-not)
 - [Before and after](#before-and-after)
 - [Live demo](#live-demo)
+- [Examples: Clean vs Debug view](#examples-clean-vs-debug-view)
 - [Architecture](#architecture)
 - [How shelf row detection works](#how-shelf-row-detection-works)
 - [How detection cleanup works](#how-detection-cleanup-works)
@@ -68,6 +69,48 @@ The root cause and the fix are both documented with exact file and line referenc
 **Analysis result**, rendered from a real API response against the harder of the two bundled sample photos. Note the honest count-mismatch note instead of a fabricated sixth shelf, and the per-shelf confidence column:
 
 ![Analysis result](docs/screenshots/ui_results.png)
+
+## Examples: Clean vs Debug view
+
+Both bundled sample photos, run through the same live pipeline at the thresholds shown in [API reference](#api-reference), saved verbatim in `backend/sample_data/output/` and reproducible with `python backend/sample_data/generate_samples.py`.
+
+### Easier case: soda bottles, near-straight-on angle
+
+<table>
+<tr>
+<th align="center">Clean view</th>
+<th align="center">Debug view</th>
+</tr>
+<tr>
+<td><img src="backend/sample_data/output/shelf_soda_bottles_clean.jpg" width="480"></td>
+<td><img src="backend/sample_data/output/shelf_soda_bottles_debug.jpg" width="480"></td>
+</tr>
+<tr>
+<td align="center">87% occupancy, 23 facings across 3 detected regions, 3 est. missing facings</td>
+<td align="center">Per-box class and confidence labels plus a full-width status banner per shelf, for troubleshooting</td>
+</tr>
+</table>
+
+### Harder case: sauce aisle, steep angle, 51 detections
+
+<table>
+<tr>
+<th align="center">Clean view</th>
+<th align="center">Debug view</th>
+</tr>
+<tr>
+<td><img src="backend/sample_data/output/shelf_sauce_aisle_clean.jpg" width="480"></td>
+<td><img src="backend/sample_data/output/shelf_sauce_aisle_debug.jpg" width="480"></td>
+</tr>
+<tr>
+<td align="center">79% occupancy, 51 facings across 5 detected shelves, 9 est. missing facings (1 OK, 3 under-stocked, 1 unknown)</td>
+<td align="center">The densest bundled photo, and the case the label anti-collision pass in <code>annotation.py</code> exists for: a label that would overlap one already drawn just above it is nudged down or dropped, instead of stacking illegible text</td>
+</tr>
+</table>
+
+This photo was captured with a shelf plan of 6 rows in mind. Only 5 product rows were actually detected, and rather than fabricate a sixth, the API surfaces the ambiguity directly in `shelf_count_note`:
+
+> Expected 6 shelves but only 5 product row(s) were detected. The remaining 1 may be fully out of stock (no products for the detector to anchor a row on), or two physical shelves may be close enough in this photo to have been grouped into one detected row. This cannot be told apart from geometry alone; manual review is recommended for the missing shelves.
 
 ## Architecture
 

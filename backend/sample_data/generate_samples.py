@@ -29,7 +29,7 @@ from app.shelf_analysis import describe_shelf_count_mismatch, group_into_shelf_r
 SAMPLES = [
     {"file": "shelf_soda_bottles.jpg", "confidence": 0.15, "expected_shelf_count": 2},
     {"file": "shelf_sauce_aisle.jpg", "confidence": 0.12, "expected_shelf_count": 6},
-    {"file": "shelf_dairy_case.jpg", "confidence": 0.15, "expected_shelf_count": 1},
+    {"file": "shelf_bitters_wall.jpg", "confidence": 0.2, "expected_shelf_count": 3},
 ]
 
 OUTPUT_DIR = Path(__file__).parent / "output"

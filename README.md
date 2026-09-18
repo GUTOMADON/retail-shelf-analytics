@@ -91,7 +91,7 @@ Two of the three bundled sample photos, run through the same live pipeline at th
 </tr>
 </table>
 
-### Refrigerated dairy case, receding perspective
+### Liquor store bitters wall, three straight-on shelves
 
 <table>
 <tr>
@@ -99,20 +99,20 @@ Two of the three bundled sample photos, run through the same live pipeline at th
 <th align="center">Debug view</th>
 </tr>
 <tr>
-<td><img src="backend/sample_data/output/shelf_dairy_case_clean.jpg" width="480"></td>
-<td><img src="backend/sample_data/output/shelf_dairy_case_debug.jpg" width="480"></td>
+<td><img src="backend/sample_data/output/shelf_bitters_wall_clean.jpg" width="480"></td>
+<td><img src="backend/sample_data/output/shelf_bitters_wall_debug.jpg" width="480"></td>
 </tr>
 <tr>
-<td align="center">100% occupancy, 9 facings across 2 detected regions, 0 est. missing facings, both OK</td>
-<td align="center">Almost every carton next to the jugs is correctly left unboxed, since no COCO class maps to a carton; the one exception is the smooth-sided Almond Breeze carton, which the detector weakly guesses as <code>bottle</code> at 0.20 confidence. A real, visible instance of the detector coverage gap discussed in <a href="#limitations">Limitations</a>, not a hypothetical one</td>
+<td align="center">100% occupancy, 51 facings across 4 detected regions, 0 est. missing facings, 3 OK regions</td>
+<td align="center">Every product on this shelf is an individual glass or plastic bottle, exactly the shape COCO's <code>bottle</code> class was trained on, so almost every bottle across all three shelves gets a box, with no other class needed</td>
 </tr>
 </table>
 
-This is physically one continuous shelf of milk jugs receding away from the camera, but it was requested with a shelf count of 1 in mind. Because the near jugs and the far jugs differ enough in apparent size under perspective, the scale-normalized row clustering (see [How shelf row detection works](#how-shelf-row-detection-works)) splits them into two detected rows instead of one, and the API reports that honestly instead of forcing a single row:
+This photo was requested with a shelf count of 3 in mind, matching what is physically visible. A 4th region shows up in the result: a single Angostura bottle, standing slightly apart from the tight row of dropper bottles next to it, gets clustered on its own. With only one detection, that region is correctly marked `unknown` rather than being folded into its neighboring row or guessed at:
 
-> Expected 1 shelves but 2 product rows were detected. 1 extra row(s) may mean a single physical shelf was split into two clusters, for example if it holds two visually distinct product groups with a wide gap between them.
+> Expected 3 shelves but 4 product rows were detected. 1 extra row(s) may mean a single physical shelf was split into two clusters, for example if it holds two visually distinct product groups with a wide gap between them.
 
-This is the same class of ambiguity documented for the sauce-aisle photo in the [Live demo](#live-demo) screenshot above, on a second, independent photo.
+The same honest handling of a mismatch between the requested and detected shelf count shown for the sauce-aisle photo in the [Live demo](#live-demo) screenshot above, on a second, independent photo, and for a very different reason (an outlier detection here, versus a possibly-missing shelf there).
 
 ## Architecture
 

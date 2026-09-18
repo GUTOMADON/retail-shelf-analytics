@@ -8,7 +8,10 @@ Two render modes are supported:
   the one used in documentation and demos.
 - Debug view: adds per-box class and confidence labels and a full-width
   status banner per shelf. Meant for development and troubleshooting, not
-  for a first-look demo image, since labels can overlap on dense shelves.
+  for a first-look demo image. Labels get a dark backdrop for contrast and
+  an anti-collision pass that nudges or drops one that would overlap a
+  label already drawn in the same region, since a dense shelf row can pack
+  boxes closer together than their labels' text width.
 
 When a ComplianceSummary is passed in, a compact executive summary card
 (occupancy, facing count, gap count, status breakdown) is drawn in the
@@ -34,6 +37,13 @@ _STATUS_COLORS: dict[RegionStatus, tuple[int, int, int]] = {
 _GAP_COLOR = (239, 68, 68)
 _BOX_COLOR = (59, 130, 246)
 _MARGIN_WIDTH = 14
+_LABEL_BACKDROP_COLOR = (0, 0, 0, 190)
+
+_LABEL_NUDGE_ATTEMPTS = 4
+"""Vertical steps tried before a colliding debug label is dropped instead of
+drawn on top of another one. A dense shelf row rarely stacks more than a
+handful of boxes at the same x-position, so a small, fixed budget is enough
+without scanning the whole image for free space."""
 
 
 def _load_font(size: int) -> ImageFont.ImageFont:
@@ -41,6 +51,37 @@ def _load_font(size: int) -> ImageFont.ImageFont:
         return ImageFont.truetype("arial.ttf", size)
     except OSError:
         return ImageFont.load_default()
+
+
+def _rects_overlap(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> bool:
+    ax1, ay1, ax2, ay2 = a
+    bx1, by1, bx2, by2 = b
+    return ax1 < bx2 and ax2 > bx1 and ay1 < by2 and ay2 > by1
+
+
+def _place_label(
+    origin_x: float,
+    origin_y: float,
+    width: float,
+    height: float,
+    placed: list[tuple[float, float, float, float]],
+) -> tuple[float, float, float, float] | None:
+    """Find a vertical slot for a label that does not overlap one already
+    drawn in this region.
+
+    Boxes on a dense shelf can sit close enough together that their
+    confidence labels collide even though the boxes themselves do not,
+    since a label is drawn just above its box rather than inside it. The
+    label is nudged straight down, one label-height at a time; if every
+    attempt still collides, the caller skips it rather than render
+    unreadable overlapping text.
+    """
+    for step in range(_LABEL_NUDGE_ATTEMPTS + 1):
+        y = origin_y + step * height
+        candidate = (origin_x, y, origin_x + width, y + height)
+        if not any(_rects_overlap(candidate, other) for other in placed):
+            return candidate
+    return None
 
 
 def _draw_region_margin(draw: ImageDraw.ImageDraw, region: ShelfRegion, font: ImageFont.ImageFont) -> None:
@@ -149,12 +190,20 @@ def draw_annotations(
             )
             draw.text((_MARGIN_WIDTH + 8, region.y_start + 4), banner, fill=(255, 255, 255, 255), font=banner_font)
 
+        placed_label_boxes: list[tuple[float, float, float, float]] = []
         for det in region.detections:
             b = det.bbox
             draw.rectangle([b.x1, b.y1, b.x2, b.y2], outline=_BOX_COLOR, width=2)
             if debug:
                 tag = f"{det.class_name} {det.confidence:.2f}"
-                draw.text((b.x1 + 2, max(0, b.y1 - 14)), tag, fill=_BOX_COLOR, font=box_font)
+                text_width = draw.textlength(tag, font=box_font)
+                text_height = box_font.size + 4
+                label_rect = _place_label(b.x1 + 2, max(0, b.y1 - 14), text_width, text_height, placed_label_boxes)
+                if label_rect is not None:
+                    x1, y1, x2, y2 = label_rect
+                    draw.rectangle([x1 - 1, y1 - 1, x2 + 1, y2 + 1], fill=_LABEL_BACKDROP_COLOR)
+                    draw.text((x1, y1), tag, fill=_BOX_COLOR, font=box_font)
+                    placed_label_boxes.append(label_rect)
 
         for gap in region.gaps:
             _draw_gap_marker(draw, region, gap, box_font, debug)
